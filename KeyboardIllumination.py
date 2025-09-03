@@ -48,3 +48,26 @@ def set_scroll_lock(on: bool):
             last_bass_state = on
         except Exception as e:
             print(f"\nKeyboard error: {e}")
+
+def update_gui(bass):
+    global bass_label
+    bar_len = min(int(bass * 200), 50)
+    bar = '█' * bar_len + '.' * (50 - bar_len)
+    state_indicator = "🔊 ON" if last_bass_state else "🔇 OFF"
+    text = f"Bass [{bar}] Level: {bass:.3f} | Threshold: {threshold:.3f} | {state_indicator}"
+    bass_label.config(text=text)
+
+def audio_callback(indata, frames, time_info, status):
+    global running, current_bass, threshold
+    if not running:
+        return
+    try:
+        bass = detect_bass(indata)
+        current_bass = bass
+        bass_detected = bass > threshold
+        set_scroll_lock(bass_detected)
+        if root:
+            root.after(0, update_gui, bass)
+    except Exception as e:
+        print(f"\nAudio callback error: {e}")
+        running = False
