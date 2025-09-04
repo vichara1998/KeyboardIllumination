@@ -71,3 +71,64 @@ def audio_callback(indata, frames, time_info, status):
     except Exception as e:
         print(f"\nAudio callback error: {e}")
         running = False
+def control_listener():
+    global threshold, running
+    def on_press(key):
+        global threshold
+        try:
+            if hasattr(key, 'char') and key.char:
+                if key.char in ('+', '='):
+                    threshold += 0.005
+                elif key.char in ('-', '_'):
+                    threshold = max(0.0, threshold - 0.005)
+        except AttributeError:
+            pass
+        if key == keyboard.Key.esc:
+            print("\nExiting...")
+            running = False
+            return False
+    try:
+        with keyboard.Listener(on_press=on_press) as listener:
+            listener.join()
+    except Exception as e:
+        print(f"\nKeyboard listener error: {e}")
+        running = False
+
+# Main execution
+try:
+    os.system('cls' if os.name == 'nt' else 'clear')
+    print("🎵 Bass Detection + Scroll Lock Visualizer")
+    print("=" * 60)
+    print("Controls:")
+    print("  [+ or =] Increase Threshold")
+    print("  [- or _] Decrease Threshold")
+    print("  [ESC]    Exit")
+    print(f"Sample Rate: {fs} Hz")
+    print(f"Initial Threshold: {threshold:.3f}")
+    print("\nStarting audio monitoring...\n")
+
+    listener_thread = threading.Thread(target=control_listener, daemon=True)
+    listener_thread.start()
+
+    with sd.InputStream(
+        callback=audio_callback,
+        blocksize=int(fs * block_duration),
+        channels=1,
+        samplerate=fs,
+        dtype='float32'
+    ) as stream:
+        while running:
+            time.sleep(0.01)
+
+except KeyboardInterrupt:
+    print("\nStopped by user (Ctrl+C)")
+except Exception as e:
+    print(f"\nError: {e}")
+    print("Troubleshooting:")
+    print("- Is your microphone working?")
+    print("- Run as Administrator if needed")
+    print("- Check dependencies (sounddevice, pynput)")
+finally:
+    running = False
+    print("\nExiting cleanly...")
+    time.sleep(0.2)
