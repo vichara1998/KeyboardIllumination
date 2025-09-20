@@ -38,6 +38,16 @@ def detect_bass(indata):
     bass_energy = np.sum(fft[bass_min_bin:bass_max_bin])
     return bass_energy
 
+def set_scroll_lock(on: bool):
+    global last_bass_state
+    if on != last_bass_state:
+        try:
+            keyboard_controller.press(Key.scroll_lock)
+            time.sleep(0.01)
+            keyboard_controller.release(Key.scroll_lock)
+            last_bass_state = on
+        except Exception as e:
+            print(f"\nKeyboard error: {e}")
 
 def update_gui(bass):
     global bass_label
